@@ -89,6 +89,7 @@ install_iterm2() { install_cask_if_missing iterm2; }
 install_google_chrome() { install_cask_if_missing google-chrome; }
 install_alfred() { install_cask_if_missing alfred; }
 install_orbstack() { install_cask_if_missing orbstack; }
+install_vscode_app() { install_cask_if_missing visual-studio-code; }
 install_tmux() { install_formula_if_missing tmux; }
 install_zsh() { install_formula_if_missing zsh; }
 
@@ -131,6 +132,7 @@ install_applications() {
   run_step "Google Chrome" install_google_chrome
   run_step "Alfred" install_alfred
   run_step "OrbStack" install_orbstack
+  run_step "VS Code" install_vscode_app
   run_step "Tmux" install_tmux
   run_step "Zsh" install_zsh
   run_step "Oh My Zsh" install_oh_my_zsh

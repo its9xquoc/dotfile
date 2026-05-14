@@ -2,15 +2,16 @@
 Setup and configuration for a new macOS dev environment with dotfiles and Homebrew packages.
 
 ## Applications
-- [ ] Homebrew
-- [ ] iTerm2
-- [ ] Google Chrome
-- [ ] Alfred
-- [ ] OrbStack
-- [ ] Tmux
-- [ ] Zsh
-- [ ] Oh My Zsh
-- [ ] Aerospace
+- [x] Homebrew
+- [x] iTerm2
+- [x] Google Chrome
+- [x] Alfred
+- [x] OrbStack
+- [x] Tmux
+- [x] Zsh
+- [x] VS Code
+- [x] Oh My Zsh
+- [x] Aerospace
 
 ## Step-by-Step Installation
 1. Clone this repository:
