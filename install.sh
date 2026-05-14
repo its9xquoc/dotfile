@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -uo pipefail
 
 DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MODE="symlink"
+FAILED_STEPS=()
 
 for arg in "$@"; do
   case "$arg" in
@@ -14,6 +15,19 @@ for arg in "$@"; do
       ;;
   esac
 done
+
+run_step() {
+  local name="$1"
+  shift
+
+  echo "--- Running: $name"
+  if "$@"; then
+    echo "--- Success: $name"
+  else
+    echo "--- Failed: $name"
+    FAILED_STEPS+=("$name")
+  fi
+}
 
 backup_if_exists() {
   local target="$1"
@@ -49,12 +63,34 @@ ensure_homebrew() {
   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 }
 
-install_iterm2() { brew install --cask iterm2; }
-install_google_chrome() { brew install --cask google-chrome; }
-install_alfred() { brew install --cask alfred; }
-install_orbstack() { brew install --cask orbstack; }
-install_tmux() { brew install tmux; }
-install_zsh() { brew install zsh; }
+install_formula_if_missing() {
+  local formula="$1"
+  if brew list --formula "$formula" >/dev/null 2>&1; then
+    echo "$formula already installed"
+    return
+  fi
+
+  echo "Installing formula: $formula"
+  brew install "$formula"
+}
+
+install_cask_if_missing() {
+  local cask="$1"
+  if brew list --cask "$cask" >/dev/null 2>&1; then
+    echo "$cask already installed"
+    return
+  fi
+
+  echo "Installing cask: $cask"
+  brew install --cask "$cask"
+}
+
+install_iterm2() { install_cask_if_missing iterm2; }
+install_google_chrome() { install_cask_if_missing google-chrome; }
+install_alfred() { install_cask_if_missing alfred; }
+install_orbstack() { install_cask_if_missing orbstack; }
+install_tmux() { install_formula_if_missing tmux; }
+install_zsh() { install_formula_if_missing zsh; }
 
 install_oh_my_zsh() {
   if [[ -d "$HOME/.oh-my-zsh" ]]; then
@@ -87,20 +123,20 @@ configure_zshrc() {
   grep -q '^alias dc="docker compose"' "$zshrc" || echo 'alias dc="docker compose"' >> "$zshrc"
 }
 
-install_aerospace() { brew install --cask nikitabobko/tap/aerospace; }
+install_aerospace() { install_cask_if_missing nikitabobko/tap/aerospace; }
 
 install_applications() {
-  ensure_homebrew
-  install_iterm2
-  install_google_chrome
-  install_alfred
-  install_orbstack
-  install_tmux
-  install_zsh
-  install_oh_my_zsh
-  install_zsh_plugins
-  configure_zshrc
-  install_aerospace
+  run_step "Homebrew" ensure_homebrew
+  run_step "iTerm2" install_iterm2
+  run_step "Google Chrome" install_google_chrome
+  run_step "Alfred" install_alfred
+  run_step "OrbStack" install_orbstack
+  run_step "Tmux" install_tmux
+  run_step "Zsh" install_zsh
+  run_step "Oh My Zsh" install_oh_my_zsh
+  run_step "Zsh plugins" install_zsh_plugins
+  run_step "Zshrc config" configure_zshrc
+  run_step "Aerospace" install_aerospace
 }
 
 install_vscode_settings() {
@@ -121,11 +157,11 @@ install_vscode_extensions() {
 
 install_dotfiles() {
   mkdir -p "$HOME/.config"
-  link_or_copy "$DOTFILES_DIR/.tmux.conf" "$HOME/.tmux.conf"
-  link_or_copy "$DOTFILES_DIR/.aerospace.toml" "$HOME/.aerospace.toml"
-  link_or_copy "$DOTFILES_DIR/tmux" "$HOME/.config/tmux"
-  install_vscode_settings
-  install_vscode_extensions
+  run_step "Tmux config" link_or_copy "$DOTFILES_DIR/.tmux.conf" "$HOME/.tmux.conf"
+  run_step "Aerospace config" link_or_copy "$DOTFILES_DIR/.aerospace.toml" "$HOME/.aerospace.toml"
+  run_step "Tmux folder" link_or_copy "$DOTFILES_DIR/tmux" "$HOME/.config/tmux"
+  run_step "VS Code settings" install_vscode_settings
+  run_step "VS Code extensions" install_vscode_extensions
 }
 
 install_fonts() {
@@ -155,9 +191,14 @@ install_fonts() {
 
 main() {
   install_applications
-  install_dotfiles
-  install_fonts
-  echo "Done. Restart tmux, Aerospace, VS Code, terminal, and apps using new fonts."
+  run_step "Dotfiles" install_dotfiles
+  run_step "Fonts" install_fonts
+
+  if [[ ${#FAILED_STEPS[@]} -gt 0 ]]; then
+    echo "Completed with errors in steps: ${FAILED_STEPS[*]}"
+  else
+    echo "Done. Restart tmux, Aerospace, VS Code, terminal, and apps using new fonts."
+  fi
 }
 
 main
